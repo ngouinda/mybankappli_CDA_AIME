@@ -1,0 +1,43 @@
+services:
+  backservice:
+    build:
+      context: ./backservice  # contexte
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    volumes:
+      - ./backservice:/var/www/html:rw
+    environment:
+      DATABASE_URL: mysql://user:password@db:3306/app
+      PHP_MEMORY_LIMIT: 256M
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: app
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+
+  frontservice:
+    build:
+      context: ./frontservice  # contexte
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontservice:/app:rw
+    environment:
+      API_URL: "http://backservice:8000"
+    depends_on:
+      - backservice
+
+volumes:
+  db_data:
+  
