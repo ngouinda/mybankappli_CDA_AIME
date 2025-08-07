@@ -1,0 +1,56 @@
+// Jenkinsfile pour le frontend React
+pipeline {
+    agent any
+
+    environment {
+        // Nom de l'image Docker pour le frontend
+        DOCKER_IMAGE_NAME = "mybank-frontend"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Récupère le code depuis le dépôt Git
+                checkout scm
+            }
+        }
+        
+        stage('Build Image') {
+            steps {
+                // Construit l'image Docker de l'application frontend
+                script {
+                    sh "docker build -t ${env.DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} ."
+                }
+            }
+        }
+        
+        stage('Run Tests') {
+            // Exécute les tests Jest à l'intérieur de l'image Docker construite
+            steps {
+                sh "docker run --rm ${env.DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} npm test"
+            }
+        }
+
+        stage('Push Image') {
+            steps {
+                script {
+                    // Utilise les identifiants Docker Hub stockés dans Jenkins
+                    withCredentials([string(credentialsId: 'docker-hub-password', variable: 'DOCKER_PASSWORD'), string(credentialsId: 'docker-hub-username', variable: 'DOCKERHUB_USERNAME')]) {
+                        sh "docker login -u ${DOCKERHUB_USERNAME} -p ${DOCKER_PASSWORD}"
+                        // Pousse l'image sur Docker Hub avec le tag de build
+                        sh "docker push ${DOCKERHUB_USERNAME}/${env.DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
+                        // Ajoute également le tag 'latest'
+                        sh "docker tag ${DOCKERHUB_USERNAME}/${env.DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} ${DOCKERHUB_USERNAME}/${env.DOCKER_IMAGE_NAME}:latest"
+                        sh "docker push ${DOCKERHUB_USERNAME}/${env.DOCKER_IMAGE_NAME}:latest"
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo "Pipeline pour le frontend terminé."
+        }
+    }
+}

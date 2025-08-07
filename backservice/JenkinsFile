@@ -1,0 +1,58 @@
+// Jenkinsfile pour le backend Symfony
+
+pipeline {
+    agent any
+
+    environment {
+        // Définir la variable d'environnement pour l'image Docker
+        DOCKER_IMAGE_NAME = "mybank-backend"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Récupère le code depuis le dépôt Git
+                checkout scm
+            }
+        }
+        
+        stage('Build Image') {
+            steps {
+                // Construit l'image Docker de l'application Symfony.
+                // Le tag inclut le numéro de build de Jenkins pour un versionning unique.
+                script {
+                    sh "docker build -t ${env.DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} ."
+                }
+            }
+        }
+        
+        stage('Run Tests') {
+            // Exécute les tests unitaires PHPUnit à l'intérieur de l'image Docker construite
+            steps {
+                sh "docker run --rm ${env.DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} ./vendor/bin/phpunit"
+            }
+        }
+
+        stage('Push Image') {
+            steps {
+                script {
+                    // Utilise les identifiants Docker Hub stockés dans Jenkins de manière sécurisée
+                    withCredentials([string(credentialsId: 'docker-hub-password', variable: 'DOCKER_PASSWORD'), string(credentialsId: 'docker-hub-username', variable: 'DOCKERHUB_USERNAME')]) {
+                        sh "docker login -u ${DOCKERHUB_USERNAME} -p ${DOCKER_PASSWORD}"
+                        // Pousse l'image sur Docker Hub avec le tag de build et le tag 'latest'
+                        sh "docker push ${DOCKERHUB_USERNAME}/${env.DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
+                        sh "docker tag ${DOCKERHUB_USERNAME}/${env.DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} ${DOCKERHUB_USERNAME}/${env.DOCKER_IMAGE_NAME}:latest"
+                        sh "docker push ${DOCKERHUB_USERNAME}/${env.DOCKER_IMAGE_NAME}:latest"
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            // Tâches à exécuter après le build, qu'il réussisse ou non
+            echo "Pipeline pour le backend terminé."
+        }
+    }
+}
