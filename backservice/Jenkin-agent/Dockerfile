@@ -26,3 +26,4 @@ RUN mv composer.phar /usr/local/bin/composer
 # Install Docker
 RUN curl -fsSL https://get.docker.com -o get-docker.sh
 RUN sh get-docker.sh
+ 

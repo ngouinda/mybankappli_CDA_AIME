@@ -31,7 +31,7 @@ MyBank est une application bancaire avec un frontend en React et un backend en S
   - Construisez l'image Docker pour l'application Symfony : docker-compose build
   - Lancez les conteneurs (frontend et backend) avec Docker : docker-compose up
 
-:-) Si tout à été bien fait, l'application sera accessible à http://localhost:8000 pour le backend et http://localhost:3000 pour le frontend.
+ 😊 Si tout à été bien fait, l'application sera accessible à http://localhost:8000 pour le backend et http://localhost:3000 pour le frontend.
 
 ###  Intégration et Déploiement Continu (CI/CD)
 
@@ -55,7 +55,7 @@ Construisez l'image Docker de l'application, puis lancez-la dans un conteneur.
 - docker build -t my-bank-frontend .
 - docker run --name my-bank-frontend_container -p 3000:3000 my-bank-frontend
 
-CI/CD dans un environnement Docker
+* * CI/CD dans un environnement Docker pour front
 
 ### Démarrer l'instance Jenkins
 Si ce n'est pas déjà fait, démarrez une instance de Jenkins Master :
@@ -69,3 +69,33 @@ Ensuite, construisez l'image de l'agent Jenkins et démarrez-le.
 cd Jenkins-agent
 docker build -t jenkins-agent-with-docker-and-node-my-bank-frontend .
 docker run --init --name jenkins_agent_node -v /var/run/docker.sock:/var/run/docker.sock jenkins-agent-with-docker-and-node -url http://172.17.0.2:8080 8e6b5b1eca5e72e054864f966924131a03198c39ce7aa97aa6fc9dbdb2568200 my-bank-frontend
+
+* * Deploiement du backservice avce jenkins
+
+- Lancer Jenkins Master:  docker run --name jenkins -p <choir un port>:8080 jenkins/jenkins
+- Construire et lancer un agent Jenkins (Windows - PowerShell ou CMD):
+cd Jenkins-agent
+docker build -t jenkins-agent-with-docker-and-composer-my-bank-backend .
+docker run --init --name jenkins_agent_composer \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  jenkins-agent-with-docker-and-composer-my-bank-backend \
+  -url http://172.17.0.2:8080 \
+  76cb5e741f24cd78a082be906f29e0f12d125e4f3667bbc2c0dbc6ed8d077968 \
+  my-bank-backend
+
+
+## 
+
+
+### Tests
+
+### tests en local
+
+Pour exécuter les tests unitaires du backend Symfony avec **PHPUnit**, assurez-vous que les dépendances sont installées, puis lancez :
+
+
+php bin/phpunit
+
+- Si vous utilisez Docker, vous pouvez exécuter les tests directement dans le conteneur backend :
+
+docker exec -it mybank-backend_container ./vendor/bin/phpunit
